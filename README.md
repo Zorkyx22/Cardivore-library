@@ -12,6 +12,7 @@ My own custom MTG deckbulding and card searching tool.
 ## Tasks
 
 | Status | Task | Description |
+|--------|------|-------------|
 | [ ] | Let the library update the MTG database | Every week or so, the local MTG database should be updated.  (Cardlists, Banlists, Rulesets, etc) |
 | [ ] | Let the library query the local MTG database according to user criterion | Use the MTG standard for querying the local database and send back results that match the search criterion |
 | [ ] | Let the library save cards to favorites lists | Create API commands to the library that lets users create, add to, remove from, add delete favorite lists |
