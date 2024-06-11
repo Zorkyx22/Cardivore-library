@@ -2,11 +2,17 @@
 My own custom MTG deckbulding and card searching tool.
 
 ## Sources
+
 [https://docs.magicthegathering.io/](https://docs.magicthegathering.io/)
+
 [https://github.com/MagicTheGathering/mtg-sdk-rust](https://github.com/MagicTheGathering/mtg-sdk-rust)
+
 [https://medium.com/@orfeas_erevos/integrating-rust-into-react-native-a-comprehensive-guide-df4daa6fc0c8](https://medium.com/@orfeas_erevos/integrating-rust-into-react-native-a-comprehensive-guide-df4daa6fc0c8)
+
 [https://www.tkat0.dev/posts/how-to-create-a-react-app-with-rust-and-wasm/](https://www.tkat0.dev/posts/how-to-create-a-react-app-with-rust-and-wasm/)
+
 [https://github.com/xonoxitron/rust2wasm2react-native](https://github.com/xonoxitron/rust2wasm2react-native)
+
 [https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm](https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm)
 
 ## Tasks
