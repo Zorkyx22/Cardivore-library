@@ -55,6 +55,10 @@ Planned feature areas (all unimplemented, per `README.md` task list):
 
 External data source: [magicthegathering.io API](https://docs.magicthegathering.io/) via the [mtg-sdk-rust](https://github.com/MagicTheGathering/mtg-sdk-rust) crate (not yet added as a dependency).
 
+## Project Plan
+
+`PROJECT_PLAN.md` contains a phase-by-phase implementation plan written for AI coding agents. It specifies exact function signatures, data shapes, module layout, and acceptance criteria for every planned feature. Read it before starting any implementation work.
+
 ## Key Dependencies
 
 | Crate | Purpose |
