@@ -18,6 +18,12 @@ pub struct CardivoreLibrary {
     last_sync: Option<f64>,
 }
 
+impl Default for CardivoreLibrary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl CardivoreLibrary {
     #[wasm_bindgen(constructor)]

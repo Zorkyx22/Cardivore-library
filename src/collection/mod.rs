@@ -36,7 +36,7 @@ pub fn delete_favorites_list(
 }
 
 pub fn add_to_favorites(
-    favorites: &mut Vec<FavoritesList>,
+    favorites: &mut [FavoritesList],
     list_id: &str,
     card_id: &str,
 ) -> Result<(), LibraryError> {
@@ -51,7 +51,7 @@ pub fn add_to_favorites(
 }
 
 pub fn remove_from_favorites(
-    favorites: &mut Vec<FavoritesList>,
+    favorites: &mut [FavoritesList],
     list_id: &str,
     card_id: &str,
 ) -> Result<(), LibraryError> {
@@ -93,7 +93,7 @@ pub fn delete_deck(decks: &mut Vec<Deck>, id: &str) -> Result<(), LibraryError> 
 }
 
 pub fn add_card_to_deck(
-    decks: &mut Vec<Deck>,
+    decks: &mut [Deck],
     deck_id: &str,
     card_in_deck: CardInDeck,
 ) -> Result<(), LibraryError> {
@@ -116,7 +116,7 @@ pub fn add_card_to_deck(
 }
 
 pub fn remove_card_from_deck(
-    decks: &mut Vec<Deck>,
+    decks: &mut [Deck],
     deck_id: &str,
     card_id: &str,
     category: &str,
@@ -137,7 +137,7 @@ pub fn remove_card_from_deck(
 }
 
 pub fn update_card_in_deck(
-    decks: &mut Vec<Deck>,
+    decks: &mut [Deck],
     deck_id: &str,
     updated: CardInDeck,
 ) -> Result<(), LibraryError> {
