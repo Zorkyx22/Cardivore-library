@@ -1,9 +1,11 @@
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 
-pub mod db;
 pub mod collection;
+pub mod db;
 pub mod error;
+pub mod pricing;
+pub mod rules;
 pub mod types;
 
 use error::LibraryError;
@@ -186,6 +188,120 @@ impl CardivoreLibrary {
             .map(|d| {
                 d.ruleset_id = ruleset_id;
             })
+    }
+
+    // ── Phase 5 — Table Rules CRUD ────────────────────────────────────────────
+
+    pub fn create_table_rules(&mut self, name: &str, based_on_json: &str) -> Result<String, JsValue> {
+        let based_on: Vec<String> = serde_json::from_str(based_on_json)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        Ok(rules::create_table_rules(&mut self.table_rules, name, based_on))
+    }
+
+    pub fn delete_table_rules(&mut self, id: &str) -> Result<(), JsValue> {
+        rules::delete_table_rules(&mut self.table_rules, id).map_err(lib_err_to_js)
+    }
+
+    pub fn get_table_rules(&self, id: &str) -> Result<String, JsValue> {
+        self.table_rules
+            .iter()
+            .find(|r| r.id == id)
+            .ok_or_else(|| JsValue::from_str(&format!("Not found: {}", id)))
+            .and_then(|r| serde_json::to_string(r).map_err(|e| JsValue::from_str(&e.to_string())))
+    }
+
+    pub fn list_table_rules(&self) -> Result<String, JsValue> {
+        serde_json::to_string(&self.table_rules)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    pub fn add_ban(&mut self, rules_id: &str, card_name: &str, format: &str) -> Result<(), JsValue> {
+        rules::add_ban(&mut self.table_rules, rules_id, card_name, format).map_err(lib_err_to_js)
+    }
+
+    pub fn add_unban(&mut self, rules_id: &str, card_name: &str, format: &str) -> Result<(), JsValue> {
+        rules::add_unban(&mut self.table_rules, rules_id, card_name, format).map_err(lib_err_to_js)
+    }
+
+    pub fn add_banned_keyword(&mut self, rules_id: &str, keyword: &str) -> Result<(), JsValue> {
+        rules::add_banned_keyword(&mut self.table_rules, rules_id, keyword).map_err(lib_err_to_js)
+    }
+
+    pub fn set_errata(&mut self, rules_id: &str, card_name: &str, oracle_override: &str) -> Result<(), JsValue> {
+        rules::set_errata(&mut self.table_rules, rules_id, card_name, oracle_override).map_err(lib_err_to_js)
+    }
+
+    pub fn export_table_rules(&self, id: &str) -> Result<String, JsValue> {
+        self.table_rules
+            .iter()
+            .find(|r| r.id == id)
+            .ok_or_else(|| JsValue::from_str(&format!("Not found: {}", id)))
+            .and_then(|r| serde_json::to_string(r).map_err(|e| JsValue::from_str(&e.to_string())))
+    }
+
+    pub fn import_table_rules(&mut self, json: &str) -> Result<String, JsValue> {
+        let mut ruleset: crate::types::TableRules = serde_json::from_str(json)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let new_id = collection::next_id("rules");
+        ruleset.id = new_id.clone();
+        self.table_rules.push(ruleset);
+        Ok(new_id)
+    }
+
+    // ── Phase 6 — Deck import / export ───────────────────────────────────────
+
+    pub fn import_deck(&mut self, deck_name: &str, format: &str, text: &str) -> Result<String, JsValue> {
+        let mut cards = collection::parse_deck_text(text).map_err(lib_err_to_js)?;
+        // Resolve card IDs from the local card database by case-insensitive name match.
+        for c in &mut cards {
+            if let Some(found) = self
+                .cards
+                .iter()
+                .find(|card| card.name.to_lowercase() == c.card_id.to_lowercase())
+            {
+                c.card_id = found.id.clone();
+            }
+            // If not found, card_id stays as the lowercased name placeholder.
+        }
+        let id = collection::next_id("deck");
+        let deck = crate::types::Deck {
+            id: id.clone(),
+            name: deck_name.to_string(),
+            format: format.to_string(),
+            folder: None,
+            ruleset_id: None,
+            cards,
+        };
+        self.decks.push(deck);
+        Ok(id)
+    }
+
+    pub fn export_deck(&self, deck_id: &str) -> Result<String, JsValue> {
+        let deck = self
+            .decks
+            .iter()
+            .find(|d| d.id == deck_id)
+            .ok_or_else(|| JsValue::from_str(&format!("Not found: {}", deck_id)))?;
+        let card_lookup: std::collections::HashMap<String, crate::types::Card> = self
+            .cards
+            .iter()
+            .map(|c| (c.id.clone(), c.clone()))
+            .collect();
+        Ok(collection::emit_deck_text(deck, &card_lookup))
+    }
+
+    // ── Phase 7 — Card pricing ────────────────────────────────────────────────
+
+    pub async fn get_card_price(&self, card_id: &str, vendor: &str) -> Result<String, JsValue> {
+        let card = self
+            .cards
+            .iter()
+            .find(|c| c.id == card_id)
+            .ok_or_else(|| JsValue::from_str(&format!("Not found: {}", card_id)))?;
+        let price = pricing::fetch_price(card, vendor)
+            .await
+            .map_err(lib_err_to_js)?;
+        serde_json::to_string(&price).map_err(|e| JsValue::from_str(&e.to_string()))
     }
 }
 
