@@ -448,6 +448,69 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // ── Malformed-input fuzz cases (must return Err, never panic) ─────────────
+
+    #[test]
+    fn fuzz_cmc_no_value() {
+        assert!(Query::parse("cmc:").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_eq_no_number() {
+        assert!(Query::parse("cmc:=").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_ge_no_number() {
+        assert!(Query::parse("cmc:>=").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_le_no_number() {
+        assert!(Query::parse("cmc:<=").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_gt_no_number() {
+        assert!(Query::parse("cmc:>").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_lt_no_number() {
+        assert!(Query::parse("cmc:<").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_non_numeric() {
+        assert!(Query::parse("cmc:abc").is_err());
+    }
+
+    #[test]
+    fn fuzz_cmc_ge_non_numeric() {
+        assert!(Query::parse("cmc:>=xyz").is_err());
+    }
+
+    #[test]
+    fn fuzz_empty_key() {
+        // ":::value" has key "" which is unknown
+        assert!(Query::parse(":value").is_err());
+    }
+
+    #[test]
+    fn fuzz_triple_colon() {
+        assert!(Query::parse(":::").is_err());
+    }
+
+    #[test]
+    fn fuzz_unknown_key_long() {
+        assert!(Query::parse("notakey:dragon").is_err());
+    }
+
+    #[test]
+    fn fuzz_unicode_key() {
+        assert!(Query::parse("naïve:dragon").is_err());
+    }
+
     #[test]
     fn test_multiple_predicates_and_logic() {
         let card = make_card();

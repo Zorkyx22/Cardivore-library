@@ -308,3 +308,128 @@ impl CardivoreLibrary {
 fn lib_err_to_js(e: LibraryError) -> JsValue {
     JsValue::from_str(&e.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    fn make_library_with_deck() -> CardivoreLibrary {
+        CardivoreLibrary {
+            cards: Vec::new(),
+            decks: vec![types::Deck {
+                id: "deck-001".to_string(),
+                name: "Test Commander".to_string(),
+                format: "commander".to_string(),
+                folder: Some("favorites".to_string()),
+                ruleset_id: None,
+                cards: vec![
+                    types::CardInDeck {
+                        card_id: "card-atraxa".to_string(),
+                        quantity: 1,
+                        category: "commander".to_string(),
+                        is_commander: true,
+                        is_companion: false,
+                        notes: None,
+                    },
+                    types::CardInDeck {
+                        card_id: "card-bolt".to_string(),
+                        quantity: 4,
+                        category: "mainboard".to_string(),
+                        is_commander: false,
+                        is_companion: false,
+                        notes: Some("fast removal".to_string()),
+                    },
+                ],
+            }],
+            favorites: Vec::new(),
+            table_rules: Vec::new(),
+            last_sync: Some(1_700_000_000_000.0),
+        }
+    }
+
+    fn make_library_with_rules() -> CardivoreLibrary {
+        let mut errata = HashMap::new();
+        errata.insert("Balance".to_string(), "Custom oracle text".to_string());
+
+        CardivoreLibrary {
+            cards: Vec::new(),
+            decks: Vec::new(),
+            favorites: Vec::new(),
+            table_rules: vec![types::TableRules {
+                id: "rules-001".to_string(),
+                name: "House Rules".to_string(),
+                based_on: vec!["commander".to_string()],
+                unbanned: vec![types::BanEntry {
+                    card_name: "Sylvan Primordial".to_string(),
+                    format: "commander".to_string(),
+                }],
+                banned: vec![types::BanEntry {
+                    card_name: "Sol Ring".to_string(),
+                    format: "commander".to_string(),
+                }],
+                banned_keywords: vec!["Poison".to_string()],
+                errata,
+            }],
+            last_sync: None,
+        }
+    }
+
+    #[test]
+    fn test_deck_state_round_trip() {
+        let lib = make_library_with_deck();
+        let json = serde_json::to_string(&lib).unwrap();
+        let restored: CardivoreLibrary = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored.decks.len(), 1);
+        let deck = &restored.decks[0];
+        assert_eq!(deck.id, "deck-001");
+        assert_eq!(deck.name, "Test Commander");
+        assert_eq!(deck.format, "commander");
+        assert_eq!(deck.folder, Some("favorites".to_string()));
+        assert_eq!(deck.cards.len(), 2);
+
+        let cmd = deck.cards.iter().find(|c| c.is_commander).unwrap();
+        assert_eq!(cmd.card_id, "card-atraxa");
+        assert_eq!(cmd.quantity, 1);
+
+        let mb = deck.cards.iter().find(|c| c.category == "mainboard").unwrap();
+        assert_eq!(mb.card_id, "card-bolt");
+        assert_eq!(mb.quantity, 4);
+        assert_eq!(mb.notes.as_deref(), Some("fast removal"));
+
+        assert_eq!(restored.last_sync, Some(1_700_000_000_000.0));
+    }
+
+    #[test]
+    fn test_table_rules_export_import_round_trip() {
+        let lib = make_library_with_rules();
+        let json = serde_json::to_string(&lib).unwrap();
+
+        // Simulate clearing: deserialize into a fresh library then replace table_rules.
+        let mut restored: CardivoreLibrary = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.table_rules.len(), 1);
+
+        // Export the ruleset.
+        let exported = serde_json::to_string(&restored.table_rules[0]).unwrap();
+
+        // Clear, then re-import with a new id (mirrors import_table_rules logic).
+        restored.table_rules.clear();
+        assert!(restored.table_rules.is_empty());
+
+        let mut reimported: types::TableRules = serde_json::from_str(&exported).unwrap();
+        reimported.id = "rules-002".to_string();
+        restored.table_rules.push(reimported);
+
+        let rules = &restored.table_rules[0];
+        assert_eq!(rules.id, "rules-002");
+        assert_eq!(rules.name, "House Rules");
+        assert_eq!(rules.based_on, vec!["commander".to_string()]);
+        assert_eq!(rules.unbanned.len(), 1);
+        assert_eq!(rules.unbanned[0].card_name, "Sylvan Primordial");
+        assert_eq!(rules.banned.len(), 1);
+        assert_eq!(rules.banned[0].card_name, "Sol Ring");
+        assert_eq!(rules.banned_keywords, vec!["Poison".to_string()]);
+        assert_eq!(rules.errata.get("Balance").map(String::as_str), Some("Custom oracle text"));
+    }
+}
